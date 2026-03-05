@@ -1,0 +1,35 @@
+ 找到问题了。日志里有关键错误：
+
+  SEVERE - Unsupported compiler version:
+  java.lang.IllegalArgumentException: Unsupported compiler version:
+      at org.jetbrains.kotlin.idea.compiler.configuration.IdeKotlinVersion
+
+  这是 Kotlin 插件的 bug — 它在验证 Run Configuration 时尝试解析 Kotlin 编译器版本，但拿到了空字符串，导致
+  checkConfiguration 抛异常，Debug 按钮直接失效。
+
+  让我看一下 Kotlin 配置文件。
+
+● Read 1 file (ctrl+o to expand)
+
+● 问题确认了。.idea/kotlinc.xml 里缺少 Kotlin 编译器版本配置，Kotlin 插件拿到空字符串就崩了。
+
+  让我查一下项目用的 Kotlin 版本。
+
+● Searched for 1 pattern (ctrl+o to expand)
+
+● Kotlin 版本是 1.9.24。现在修复 kotlinc.xml，补上版本号。
+
+● Update(.idea\kotlinc.xml)
+  ⎿  Added 1 line
+      2  <project version="4">
+      3    <component name="KotlinJpsPluginSettings">
+      4      <option name="externalSystemId" value="Maven" />
+      5 +    <option name="version" value="1.9.24" />
+      6    </component>
+      7  </project>
+      8   No newline at end of file
+
+● 修好了。根本原因是 .idea/kotlinc.xml 里缺少 version 配置，Kotlin 插件在验证 Run Configuration 时解析到空版本号就抛了
+  IllegalArgumentException，导致 checkConfiguration 失败，Debug 按钮变灰。
+
+  重启 IDEA 后再试试 Debug，应该就正常了。
